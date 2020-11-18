@@ -1,5 +1,6 @@
 from bson import json_util, ObjectId
-from flask import Flask
+from flask import Flask, request
+from datetime import datetime
 
 from app.helpers import mongo_client
 
@@ -39,7 +40,28 @@ def engagements_by_id(engagement_id):
 
 @app.route('/interactions')
 def interactions():
-    # TODO: Modify this endpoint according to problem statement!
+    engagement_id = request.args.get('engagementId')
+    start_date = request.args.get('startDate')
+    end_date = request.args.get('endDate')
+
+    if engagement_id != None:
+        engagement_object_id = ObjectId(engagement_id)
+
+        if start_date and not end_date:
+            return json_util.dumps(db.interactions.find({'engagementId': engagement_object_id,\
+                    'interactionDate': {"$gte": datetime.fromtimestamp(int(start_date) / 1e3)}}))
+
+        if end_date and not start_date:
+            return json_util.dumps(db.interactions.find({'engagementId': engagement_object_id,\
+                    'interactionDate': {"$lte": datetime.fromtimestamp(int(end_date) / 1e3)}}))
+
+        if not start_date and not end_date:
+            return json_util.dumps(db.interactions.find({'engagementId': engagement_object_id}))
+
+        return json_util.dumps(db.interactions.find({'engagementId': engagement_object_id,\
+                'interactionDate':{"$gte": datetime.fromtimestamp(int(start_date) / 1e3),\
+                "$lte": datetime.fromtimestamp(int(end_date)/1e3)}}))
+
     return json_util.dumps(db.interactions.find({}))
 
 
